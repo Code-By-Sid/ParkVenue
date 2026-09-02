@@ -1,0 +1,40 @@
+name: Deploy Django App to PythonAnywhere
+
+on:
+  push:
+    branches:
+      - main  # Change to "master" if your default branch uses that name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 2.1: Pull latest code into the GitHub runner
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2.2: Remotely execute deployment tasks on PythonAnywhere via SSH
+      - name: Execute Git Pull and Migrations via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ssh.pythonanywhere.com
+          username: ${{ secrets.PA_USERNAME }}
+          token: ${{ secrets.PA_API_TOKEN }} # Or use an SSH Private Key secret if preferred
+          script: |
+            cd ~/ParkVenue
+            git reset --hard origin/main
+            git pull origin main
+            source ~/.venv/bin/activate
+            pip install -r requirements.txt
+            python manage.py migrate --noinput
+            python manage.py collectstatic --noinput
+
+      # Step 2.3: Reload the Web App so changes take effect immediately
+      - name: Reload PythonAnywhere WebApp
+        uses: umuttopalak/pythonanywhere-deploy-action@v1.1.0
+        with:
+          host: www.pythonanywhere.com
+          username: ${{ secrets.PA_USERNAME }}
+          api_token: ${{ secrets.PA_API_TOKEN }}
+          domain_name: ${{ secrets.PA_DOMAIN }}
