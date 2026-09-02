@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'finder',
     'booking',
     'bookmarks',
-    'deploye',
 ]
 
 MIDDLEWARE = [

@@ -23,6 +23,5 @@ urlpatterns = [
     path('', include('finder.urls')),
     path('', include('booking.urls')),
     path('', include('bookmarks.urls')),
-    path('', include('deploye.urls')),
     path('admin/', admin.site.urls),
 ]
