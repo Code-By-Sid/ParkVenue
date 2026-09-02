@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 def github_webhook_deploy(request):
     # Optional but recommended: Secure it with a secret query token
     secret_token = request.GET.get('token')
-    if secret_token != "YOUR_SUPER_SECRET_STRING_HERE":
+    if secret_token != "34b36454cab2e7842c389f7d88ecb7df279e3918cbac07970d4cde496e70f4c8":
         return HttpResponseForbidden("Unauthorized")
 
     if request.method == "POST":
