@@ -1,0 +1,260 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add parking spot — ParkVenue</title>
+    <link rel="icon" type="image/png" href="{% static 'img/park.png' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{% static 'css/parkvenue.css' %}">
+    <style>
+        .radio-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+        .radio-option { position: relative; cursor: pointer; }
+        .radio-option input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+        .radio-option span {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 10px 18px; border-radius: 100px;
+            background: var(--surface); border: 1px solid var(--border);
+            color: var(--text-dim); font-size: 0.85rem; font-weight: 500;
+            transition: all 0.25s;
+        }
+        .radio-option span i { font-size: 1.05rem; }
+        .radio-option input:checked + span {
+            background: var(--primary-soft); border-color: var(--border-strong); color: #c4b5fd;
+        }
+        .radio-option:hover span { border-color: var(--border-strong); }
+
+        .map-modal {
+            display: none; position: fixed; inset: 0; z-index: 400;
+            background: rgba(5, 5, 10, 0.75); backdrop-filter: blur(6px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-card {
+            background: #14151f; border: 1px solid var(--border);
+            border-radius: var(--radius-l); width: 100%; max-width: 620px;
+            overflow: hidden; box-shadow: var(--shadow);
+            animation: rise 0.4s ease both;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 22px; border-bottom: 1px solid var(--border);
+        }
+        .modal-header h3 { font-size: 1.02rem; font-weight: 700; }
+        .close-modal {
+            background: none; border: none; color: var(--text-dim);
+            font-size: 1.6rem; cursor: pointer; line-height: 1; transition: color 0.2s;
+        }
+        .close-modal:hover { color: var(--danger); }
+        .modal-card #map { height: 340px; width: 100%; }
+        .modal-footer { padding: 16px 22px; display: flex; gap: 10px; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="app-shell">
+        <div class="container">
+            <header class="app-topbar">
+                <div class="profile">
+                    <div class="profile-pic">{{first}}</div>
+                    <div class="profile-text">
+                        <p>Welcome back <i class='bx bx-smile'></i></p>
+                        <h3>{{user.first_name}}</h3>
+                    </div>
+                </div>
+                <div class="menu-icon" onclick="toggleMenu(event)">
+                    <i class='bx bx-dots-vertical-rounded'></i>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <form action="{% url 'logout' %}" method="POST">
+                            {% csrf_token %}
+                            <button class="logout-btn" type="submit">
+                                <i class='bx bx-log-out'></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <h1 class="app-title">Add a New Parking Spot</h1>
+            <p class="app-subtitle">Give drivers the details — location, pricing, hours and security.</p>
+
+            <div class="panel reveal visible" style="max-width: 680px; margin: 0 auto;">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-grid">
+                        <div class="field full">
+                            <input type="text" required placeholder=" " name="spot_name" id="spot_name">
+                            <label for="spot_name">Spot name</label>
+                            <i class='bx bxs-parking lead-icon'></i>
+                        </div>
+                        <div class="field">
+                            <input type="number" step="any" required placeholder=" " name="latitude" id="latitude">
+                            <label for="latitude">Latitude</label>
+                            <i class='bx bx-map-pin lead-icon'></i>
+                        </div>
+                        <div class="field">
+                            <input type="number" step="any" required placeholder=" " name="longitude" id="longitude">
+                            <label for="longitude">Longitude</label>
+                            <i class='bx bx-map-pin lead-icon'></i>
+                        </div>
+                        <div class="field full">
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="getLocation()" style="width: 100%;">
+                                <i class='bx bx-current-location'></i> Use my current location
+                            </button>
+                        </div>
+                        <div class="field">
+                            <input type="text" required placeholder=" " name="city" id="city">
+                            <label for="city">City</label>
+                            <i class='bx bx-buildings lead-icon'></i>
+                        </div>
+                        <div class="field">
+                            <input type="number" required placeholder=" " step="0.01" min="0" name="price_per_hour" id="price_per_hour">
+                            <label for="price_per_hour">Price per hour (₹)</label>
+                            <i class='bx bx-rupee lead-icon'></i>
+                        </div>
+                        <div class="field">
+                            <input type="number" required placeholder=" " min="1" name="total_slots" id="total_slots">
+                            <label for="total_slots">Total slots</label>
+                            <i class='bx bx-car lead-icon'></i>
+                        </div>
+                        <div class="field">
+                            <input type="time" required placeholder=" " name="opening_time" id="opening_time">
+                            <label for="opening_time">Opening time</label>
+                            <i class='bx bx-time lead-icon'></i>
+                        </div>
+                        <div class="field">
+                            <input type="time" required placeholder=" " name="closing_time" id="closing_time">
+                            <label for="closing_time">Closing time</label>
+                            <i class='bx bx-time-five lead-icon'></i>
+                        </div>
+
+                        <div class="full">
+                            <p style="color: var(--text-dim); font-size: 0.85rem; font-weight: 600; margin-bottom: 10px;">Security features</p>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="security" value="basic" required>
+                                    <span><i class='bx bx-bulb'></i> Basic (Lighting)</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="security" value="standard">
+                                    <span><i class='bx bx-video'></i> Standard (CCTV)</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="security" value="premium">
+                                    <span><i class='bx bx-shield-quarter'></i> Premium (24/7)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 28px; width: 100%;">
+                        <i class='bx bx-plus'></i> Add Parking Spot
+                    </button>
+                </form>
+            </div>
+
+            <nav class="bottom-nav">
+                <button class="nav-btn" onclick="window.location.href='{% url 'home' %}'">
+                    <i class='bx bx-home'></i>
+                    <span>Home</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='{% url 'proinfo' %}'">
+                  <i class='bx bx-user'></i>
+                    <span>Profile</span>
+                </button>
+                <button class="nav-btn active" onclick="window.location.href='{% url 'addspot' %}'">
+                  <i class='bx bx-add-to-queue'></i>
+                  <span>Add Spot</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='{% url 'managepark' %}'">
+                  <i class='bx bxs-parking'></i>
+                  <span>My Spots</span>
+              </button>
+                <button class="nav-btn" onclick="window.location.href='{% url 'reservation' %}'">
+                    <i class='bx bx-calendar-check'></i>
+                    <span>Reservation</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Confirm-location modal -->
+    <div class="map-modal" id="mapModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Confirm your location</h3>
+                <button class="close-modal" onclick="closeMapModal()" aria-label="Close">&times;</button>
+            </div>
+            <div id="map"></div>
+            <div class="modal-footer">
+                <span style="color: var(--text-faint); font-size: 0.8rem; align-self: center; margin-right: auto;">Drag the pin to fine-tune the exact spot.</span>
+                <button class="btn btn-primary btn-sm" onclick="closeMapModal()"><i class='bx bx-check'></i> Looks right</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/parkvenue.js' %}"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let marker;
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        fillCoordinates(lat, lng);
+                        showMapModal(lat, lng);
+                    },
+                    error => {
+                        window.pvToast("Error getting location: " + error.message, "bx-error");
+                    }
+                );
+            } else {
+                window.pvToast("Geolocation is not supported by this browser.", "bx-error");
+            }
+        }
+
+        function fillCoordinates(lat, lng) {
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lng.toFixed(6);
+        }
+
+        function initMap(lat, lng) {
+            if (map) map.remove();
+
+            map = L.map('map').setView([lat, lng], 16);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+
+            marker.on('dragend', function(e) {
+                const newPos = marker.getLatLng();
+                fillCoordinates(newPos.lat, newPos.lng);
+            });
+        }
+
+        function showMapModal(lat, lng) {
+            const modal = document.getElementById('mapModal');
+            modal.style.display = 'flex';
+            initMap(lat, lng);
+
+            // Fix map rendering issues
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+
+        function closeMapModal() {
+            document.getElementById('mapModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

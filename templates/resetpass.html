@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>New password — ParkVenue</title>
+   <link rel="icon" type="image/png" href="{% static 'img/park.png' %}">
+   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+   <link rel="stylesheet" href="{% static 'css/parkvenue.css' %}">
+</head>
+<body>
+   <div class="auth-page">
+      <aside class="auth-side">
+         <a class="brand" href="/">
+            <img src="{% static 'img/park.png' %}" alt="ParkVenue logo">
+            <span>ParkVenue</span>
+         </a>
+         <img class="art" src="{% static 'img/provider.svg' %}" alt="Provider illustration">
+         <div class="side-quote">
+            <b>Almost there.</b>
+            Pick a strong new password and you'll be back to parking in seconds.
+         </div>
+      </aside>
+
+      <main class="auth-main">
+         <div class="auth-card">
+            <h1>Set a new password</h1>
+            <p class="auth-sub">Choose something strong you don't use anywhere else.</p>
+
+            <form method="POST" onsubmit="return validatePasswords(event)">
+               {% csrf_token %}
+               <div class="field">
+                  <input type="password" required placeholder=" " name="password" id="password">
+                  <label for="password">New password</label>
+                  <i class='bx bx-lock-alt lead-icon'></i>
+                  <button type="button" class="toggle-pass bx bx-show" aria-label="Show password"></button>
+               </div>
+               <div class="field">
+                  <input type="password" required placeholder=" " id="passwordCreate">
+                  <label for="passwordCreate">Confirm password</label>
+                  <i class='bx bx-lock-alt lead-icon'></i>
+                  <button type="button" class="toggle-pass bx bx-show" aria-label="Show password"></button>
+               </div>
+
+               <button type="submit" class="btn btn-primary">Reset password <i class='bx bx-check-circle'></i></button>
+            </form>
+
+            <p class="auth-switch">
+               Back to <button onclick="window.location.href='{% url 'acc' %}'">Log in</button>
+            </p>
+         </div>
+      </main>
+   </div>
+   <script src="{% static 'js/parkvenue.js' %}"></script>
+   <script>
+      function validatePasswords(event) {
+         var password = document.getElementById("password").value;
+         var confirmPassword = document.getElementById("passwordCreate").value;
+         if (password !== confirmPassword) {
+            event.preventDefault();
+            window.pvToast("Passwords do not match!", "bx-error");
+            return false;
+         }
+         return true;
+      }
+   </script>
+</body>
+</html>

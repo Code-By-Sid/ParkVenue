@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Verify OTP — ParkVenue</title>
+   <link rel="icon" type="image/png" href="{% static 'img/park.png' %}">
+   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+   <link rel="stylesheet" href="{% static 'css/parkvenue.css' %}">
+</head>
+<body>
+   <div class="auth-page">
+      <aside class="auth-side">
+         <a class="brand" href="/">
+            <img src="{% static 'img/park.png' %}" alt="ParkVenue logo">
+            <span>ParkVenue</span>
+         </a>
+         <img class="art" src="{% static 'img/finder.webp' %}" alt="Driver illustration">
+         <div class="side-quote">
+            <b>One last check.</b>
+            We sent a 6-digit code to your email — enter it below to verify it's really you.
+         </div>
+      </aside>
+
+      <main class="auth-main">
+         <div class="auth-card">
+            <div class="feature-icon" style="margin-bottom: 20px; width: 58px; height: 58px;">
+               <i class='bx bx-mail-send'></i>
+            </div>
+            <h1>Enter your OTP</h1>
+            <p class="auth-sub">Check your inbox and enter the one-time code we sent.</p>
+
+            <form method="POST">
+               {% csrf_token %}
+               <div class="field otp-input">
+                  <input type="number" required placeholder=" " name="otp" id="otp" min="0">
+                  <label for="otp">OTP code</label>
+                  <i class='bx bx-key lead-icon'></i>
+               </div>
+
+               {% if error %}
+               <div class="auth-error"><i class='bx bx-error-circle'></i> {{ error }}</div>
+               {% endif %}
+
+               <button type="submit" class="btn btn-primary">Verify <i class='bx bx-check-shield'></i></button>
+            </form>
+
+            <p class="auth-switch">
+               Didn't get it? Check your spam folder, or <button onclick="window.location.reload()">try again</button>
+            </p>
+         </div>
+      </main>
+   </div>
+   <script src="{% static 'js/parkvenue.js' %}"></script>
+</body>
+</html>

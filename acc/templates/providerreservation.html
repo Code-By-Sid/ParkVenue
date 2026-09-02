@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservations — ParkVenue</title>
+    <link rel="icon" type="image/png" href="{% static 'img/park.png' %}">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{% static 'css/parkvenue.css' %}">
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="app-shell">
+        <div class="container">
+            <header class="app-topbar">
+                <div class="profile">
+                    <div class="profile-pic">{{first}}</div>
+                    <div class="profile-text">
+                        <p>Welcome back <i class='bx bx-smile'></i></p>
+                        <h3>{{user.first_name}}</h3>
+                    </div>
+                </div>
+                <div class="menu-icon" onclick="toggleMenu(event)">
+                    <i class='bx bx-dots-vertical-rounded'></i>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <form action="{% url 'logout' %}" method="POST">
+                            {% csrf_token %}
+                            <button class="logout-btn" type="submit">
+                                <i class='bx bx-log-out'></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <h1 class="app-title">Reservation Requests</h1>
+            <p class="app-subtitle">Approve to confirm a booking — available slots update automatically.</p>
+
+            <div class="divider-label">Pending requests</div>
+            {% for reservation in reservations %}
+            <div class="res-row reveal visible">
+                <div class="res-main">
+                    <b>{{ reservation.user.first_name }} {{ reservation.user.last_name }}</b>
+                    <span><i class='bx bx-map'></i> {{ reservation.parking_spot.name }} · {{ reservation.user }}</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span class="chip"><i class='bx bx-calendar'></i> {{ reservation.start_time|date:"d M Y" }}</span>
+                    <span class="chip"><i class='bx bx-time'></i> {{ reservation.start_time|date:"h:i A" }}</span>
+                </div>
+                <div class="res-actions">
+                    <form method="POST" action="{% url 'update_reservation' reservation.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" class="btn btn-success btn-sm"><i class='bx bx-check'></i> Approve</button>
+                    </form>
+                    <form method="POST" action="{% url 'update_reservation' reservation.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="decline">
+                        <button type="submit" class="btn btn-danger btn-sm"><i class='bx bx-x'></i> Decline</button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="es-icon"><i class='bx bx-inbox'></i></div>
+                <b>No pending reservation requests</b>
+                New booking requests will appear here.
+            </div>
+            {% endfor %}
+
+            <div class="divider-label">Confirmed reservations</div>
+            {% for a_reservation in confirmed_reservations %}
+            <div class="res-row reveal visible">
+                <div class="res-main">
+                    <b>{{ a_reservation.user.first_name }} {{ a_reservation.user.last_name }}</b>
+                    <span><i class='bx bx-map'></i> {{ a_reservation.parking_spot.name }} · {{ a_reservation.user }}</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span class="status-badge status-confirmed"><i class='bx bx-check-circle'></i> Confirmed</span>
+                    <span class="chip"><i class='bx bx-calendar'></i> {{ a_reservation.start_time|date:"d M Y" }}</span>
+                    <span class="chip"><i class='bx bx-time'></i> {{ a_reservation.start_time|date:"h:i A" }}</span>
+                </div>
+                <div class="res-actions">
+                    <form method="POST" action="{% url 'delete_reservation' a_reservation.id %}" onsubmit="return confirm('Remove this confirmed reservation? A slot will be freed.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm"><i class='bx bx-trash'></i> Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="es-icon"><i class='bx bx-calendar-check'></i></div>
+                <b>No confirmed reservations yet</b>
+                Approved bookings will show up here.
+            </div>
+            {% endfor %}
+
+            <nav class="bottom-nav">
+                <button class="nav-btn" onclick="window.location.href='{% url 'home' %}'">
+                    <i class='bx bx-home'></i>
+                    <span>Home</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='{% url 'proinfo' %}'">
+                  <i class='bx bx-user'></i>
+                    <span>Profile</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='{% url 'addspot' %}'">
+                  <i class='bx bx-add-to-queue'></i>
+                  <span>Add Spot</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='{% url 'managepark' %}'">
+                  <i class='bx bxs-parking'></i>
+                  <span>My Spots</span>
+              </button>
+                <button class="nav-btn active" onclick="window.location.href='{% url 'reservation' %}'">
+                    <i class='bx bx-calendar-check'></i>
+                    <span>Reservation</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+    <script src="{% static 'js/parkvenue.js' %}"></script>
+</body>
+</html>

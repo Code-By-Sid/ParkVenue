@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved parking — ParkVenue</title>
+    <link rel="icon" type="image/png" href="{% static 'img/park.png' %}">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{% static 'css/parkvenue.css' %}">
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="app-shell">
+        <div class="container">
+            <header class="app-topbar">
+                <div class="profile">
+                    <div class="profile-pic">{{first}}</div>
+                    <div class="profile-text">
+                        <p>Welcome back <i class='bx bx-smile'></i></p>
+                        <h3>{{user.first_name}}</h3>
+                    </div>
+                </div>
+                <div class="menu-icon" onclick="toggleMenu(event)">
+                    <i class='bx bx-dots-vertical-rounded'></i>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <form action="{% url 'logout' %}" method="POST">
+                            {% csrf_token %}
+                            <button class="logout-btn" type="submit">
+                                <i class='bx bx-log-out'></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <h1 class="app-title">Saved Parking</h1>
+            <p class="app-subtitle">Your bookmarked spots — one tap away the next time you need them.</p>
+
+            <div class="grid-cards reveal" style="margin-top: 26px;">
+                {% for slot in slots %}
+                <div class="slot-card" style="display: flex; flex-direction: column;">
+                    <h3><i class='bx bxs-parking' style="color:#a5b4fc;"></i> {{ slot.name }}</h3>
+                    <span class="slot-city"><i class='bx bx-user'></i> Owner: {{ slot.user.username }}</span>
+                    <div class="slot-meta">
+                        <span class="chip"><i class='bx bx-map'></i> {{ slot.latitude }}, {{ slot.longitude }}</span>
+                        {% if slot.available_slots > 0 %}
+                        <span class="chip good"><i class='bx bx-check'></i> {{ slot.available_slots }} free</span>
+                        {% else %}
+                        <span class="chip full"><i class='bx bx-x'></i> Full</span>
+                        {% endif %}
+                        <span class="chip price"><i class='bx bx-rupee'></i> ₹{{ slot.price }}/hr</span>
+                    </div>
+                    <div class="slot-actions">
+                        <button class="btn btn-danger btn-sm" onclick="window.location.href='{% url 'toggle_bookmark' slot.id %}'">
+                            <i class='bx bx-bookmark-minus'></i> Remove
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="es-icon"><i class='bx bx-bookmark'></i></div>
+                    <b>No saved parking slots yet</b>
+                    Tap "Save" on any marker in the map to bookmark it here.
+                    <div style="margin-top: 20px;"><a class="btn btn-primary btn-sm" href="{% url 'finder' %}"><i class='bx bx-map'></i> Explore the map</a></div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <nav class="bottom-nav">
+                <button class="nav-btn" onclick="window.location.href='{% url 'finder' %}'">
+                    <i class='bx bx-home'></i>
+                    <span>Home</span>
+                </button>
+                <button class="nav-btn active" onclick="window.location.href='{% url 'savedparking' %}'">
+                    <i class='bx bx-bookmark'></i>
+                    <span>Saved</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='{% url 'findreservation' %}'">
+                    <i class='bx bx-calendar-check'></i>
+                    <span>Bookings</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+    <script src="{% static 'js/parkvenue.js' %}"></script>
+</body>
+</html>

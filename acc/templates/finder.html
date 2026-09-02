@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find parking — ParkVenue</title>
+    <link rel="icon" type="image/png" href="{% static 'img/park.png' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{% static 'css/parkvenue.css' %}">
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="app-shell">
+        <div class="container">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="profile">
+                    <div class="profile-pic">{{first}}</div>
+                    <div class="profile-text">
+                        <p>Welcome back <i class='bx bx-smile'></i></p>
+                        <h3>{{user.first_name}}</h3>
+                    </div>
+                </div>
+                <div class="menu-icon" onclick="toggleMenu(event)">
+                    <i class='bx bx-dots-vertical-rounded'></i>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <form action="{% url 'logout' %}" method="POST">
+                            {% csrf_token %}
+                            <button class="logout-btn" type="submit">
+                                <i class='bx bx-log-out'></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Title + search -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; flex-wrap: wrap; margin-bottom: 24px;">
+                <div>
+                    <h1 class="app-title">Find Your Parking Space</h1>
+                    <p class="app-subtitle" style="margin-bottom: 0;">Live map of every listed spot near you — tap a marker to book.</p>
+                </div>
+                <form action="{% url 'search-parking' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="searchbar">
+                        <i class='bx bx-search'></i>
+                        <input type="text" placeholder="Search by city…" name="citysearch" aria-label="Search by city">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Map -->
+            <div class="map-wrap"><div id="map"></div></div>
+
+            {% include 'findernavbar.html' %}
+        </div>
+    </div>
+
+    <script>
+        let userMarker;
+
+        function setRoute(destination) {
+            if (!userMarker) {
+                window.pvToast('Please wait until your location is detected', 'bx-error');
+                return;
+            }
+
+            const userLatLng = userMarker.getLatLng();
+            const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLatLng.lat},${userLatLng.lng}&destination=${destination[0]},${destination[1]}&travelmode=driving`;
+            window.open(googleMapsUrl, '_blank');
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let watchId;
+            const isMobile = window.matchMedia("(max-width: 767px)").matches;
+            var map = L.map("map").setView([19.7515, 75.7139], isMobile ? 14 : 15);
+
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            const locationControls = L.control({ position: 'bottomright' });
+            locationControls.onAdd = function (map) {
+                const div = L.DomUtil.create('div', 'location-controls');
+                div.innerHTML = `
+                    <button class="control-btn" id="centerLocation">
+                        <i class='bx bx-target-lock'></i>
+                    </button>`;
+                return div;
+            };
+            locationControls.addTo(map);
+
+            document.getElementById('centerLocation').addEventListener('click', () => {
+                if (userMarker) {
+                    map.setView(userMarker.getLatLng(), 15);
+                }
+            });
+
+            function startTracking() {
+                if (navigator.geolocation) {
+                    watchId = navigator.geolocation.watchPosition(
+                        position => updateLocation(position),
+                        error => console.error('Error getting location:', error),
+                        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+                    );
+                }
+            }
+
+            function updateLocation(position) {
+                const { latitude, longitude } = position.coords;
+                if (!userMarker) {
+                    userMarker = L.marker([latitude, longitude], {
+                        icon: L.divIcon({
+                            className: 'parking-marker',
+                            html: '<i class="bx bxs-car" style="color:#34d399"></i>',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 30]
+                        })
+                    }).addTo(map).bindPopup("Your location");
+                } else {
+                    userMarker.setLatLng([latitude, longitude]);
+                }
+
+                // Set the map's view to the user's current location
+                map.setView([latitude, longitude], isMobile ? 14 : 15);
+            }
+
+            const parkingIcon = L.divIcon({
+                className: 'parking-marker',
+                html: '<i class="bx bxs-parking"></i>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+
+            {% for slot in parking_slots %}
+                marker = L.marker([{{ slot.latitude }}, {{ slot.longitude }}], { icon: parkingIcon })
+                    .addTo(map)
+                    .bindPopup(
+                        `<b>{{ slot.name }}</b><br>
+                        Status: {{ slot.no_of_slots }} slots<br>
+                        Price: ₹{{ slot.price }}/hr<br>
+                        <button class="pv-popup-btn" onclick="setRoute([{{ slot.latitude }}, {{ slot.longitude }}])">
+                            <i class='bx bxs-send'></i> Directions
+                        </button>
+                        <button class="pv-popup-btn" onclick="window.location.href='{% url 'reserve_spot' slot.id %}'">
+                            <i class='bx bx-cart-add'></i> Book
+                        </button>
+                        <button class="pv-popup-btn secondary" onclick="window.location.href='{% url 'toggle_bookmark' slot.id %}'">
+                            {% if slot in user.bookmarks.saved_slots.all %}
+                                <i class='bx bx-bookmark'></i> Unsave
+                            {% else %}
+                                <i class='bx bx-bookmark-plus'></i> Save
+                            {% endif %}
+                        </button>`
+                    );
+            {% endfor %}
+
+            startTracking();
+        });
+    </script>
+
+    <script src="{% static 'js/parkvenue.js' %}"></script>
+</body>
+</html>

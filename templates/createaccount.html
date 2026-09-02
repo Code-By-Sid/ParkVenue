@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Create account — ParkVenue</title>
+   <link rel="icon" type="image/png" href="{% static 'img/park.png' %}">
+   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+   <link rel="stylesheet" href="{% static 'css/parkvenue.css' %}">
+</head>
+<body>
+   <div class="auth-page">
+      <!-- Brand side -->
+      <aside class="auth-side">
+         <a class="brand" href="/">
+            <img src="{% static 'img/park.png' %}" alt="ParkVenue logo">
+            <span>ParkVenue</span>
+         </a>
+         <img class="art" src="{% static 'img/provider.svg' %}" alt="Provider illustration — join ParkVenue">
+         <div class="side-quote">
+            <b>Two minutes to join, a lifetime of easier parking.</b>
+            Verify your email with a one-time code, pick your role, and you're in.
+         </div>
+      </aside>
+
+      <!-- Form side -->
+      <main class="auth-main">
+         <div class="auth-card">
+            <h1>Create your account</h1>
+            <p class="auth-sub">Join ParkVenue as a provider or a finder — it's free.</p>
+
+            <form method="POST">
+               {% csrf_token %}
+               <div class="form-grid" style="margin-bottom: 0;">
+                  <div class="field">
+                     <input type="text" required placeholder=" " name="first_name" id="first_name">
+                     <label for="first_name">First name</label>
+                     <i class='bx bx-user lead-icon'></i>
+                  </div>
+                  <div class="field">
+                     <input type="text" required placeholder=" " name="last_name" id="last_name">
+                     <label for="last_name">Last name</label>
+                     <i class='bx bx-user lead-icon'></i>
+                  </div>
+                  <div class="field full">
+                     <input type="email" required placeholder=" " name="email" id="email">
+                     <label for="email">Email</label>
+                     <i class='bx bx-envelope lead-icon'></i>
+                  </div>
+                  <div class="field full">
+                     <input type="password" required placeholder=" " name="password" id="password">
+                     <label for="password">Password</label>
+                     <i class='bx bx-lock-alt lead-icon'></i>
+                     <button type="button" class="toggle-pass bx bx-show" aria-label="Show password"></button>
+                  </div>
+               </div>
+
+               {% if error %}
+               <div class="auth-error" style="margin-top: 18px;"><i class='bx bx-error-circle'></i> {{ error }}</div>
+               {% endif %}
+
+               <button type="submit" class="btn btn-primary" style="margin-top: 22px;">Continue <i class='bx bx-right-arrow-alt'></i></button>
+            </form>
+
+            <p class="auth-switch">
+               Already have an account? <button onclick="window.location.href='{% url 'acc' %}'">Log in</button>
+            </p>
+         </div>
+      </main>
+   </div>
+   <script src="{% static 'js/parkvenue.js' %}"></script>
+</body>
+</html>
