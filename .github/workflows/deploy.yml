@@ -20,7 +20,7 @@ jobs:
         with:
           host: ssh.pythonanywhere.com
           username: ${{ secrets.PA_USERNAME }}
-          token: ${{ secrets.PA_API_TOKEN }} # Or use an SSH Private Key secret if preferred
+          key: ${{ secrets.PA_SSH_KEY }}
           script: |
             cd ~/ParkVenue
             git reset --hard origin/main
